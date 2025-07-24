@@ -1,7 +1,30 @@
 import { NextResponse } from "next/server"
 
+interface PromptRequestBody {
+  prompt: string
+}
+
+interface OpenRouterResponse {
+  choices: {
+    message: {
+      content: string
+    }
+  }[]
+  error?: {
+    message: string
+  }
+}
+
 export async function POST(req: Request) {
-  const { prompt } = await req.json()
+  let body: PromptRequestBody
+
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 })
+  }
+
+  const { prompt } = body
   const apiKey = process.env.OPENROUTER_API_KEY
 
   if (!apiKey) {
@@ -20,20 +43,22 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: "mistralai/mistral-7b-instruct:free",
-        messages: [
-          { role: "user", content: prompt }
-        ],
+        messages: [{ role: "user", content: prompt }],
       }),
     })
 
-    const data = await response.json()
+    const data: OpenRouterResponse = await response.json()
 
     if (!response.ok) {
-      return NextResponse.json({ error: data.error?.message || "API error" }, { status: 400 })
+      return NextResponse.json(
+        { error: data.error?.message || "API error" },
+        { status: response.status }
+      )
     }
 
     return NextResponse.json({ result: data.choices[0].message.content })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unexpected server error"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

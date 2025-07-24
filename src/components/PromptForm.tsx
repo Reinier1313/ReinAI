@@ -57,11 +57,13 @@ export default function ReinAI() {
       const data: { result?: string } = await res.json()
 
       setMessages([...newMessages, { role: "assistant", content: data.result ?? "Something went wrong." }])
-    } catch (err) {
+        } catch (err) {
+      console.error("Error sending prompt:", err)
       setMessages([...newMessages, { role: "assistant", content: "Error sending prompt." }])
     } finally {
       setLoading(false)
     }
+
   }
 
   const clearMessages = () => {
