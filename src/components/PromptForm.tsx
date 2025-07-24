@@ -64,7 +64,7 @@ export default function ReinAI() {
           ...newMessages,
           {
             role: "assistant",
-            content: "I was made by Reinier Mariscotes if you want to know more about him please do contact im at reinier231@gmail.com",
+            content: "I was made by Reinier Mariscotes if you want to know more about him please do contact him at reinier231@gmail.com",
           },
         ])
         setLoading(false)
