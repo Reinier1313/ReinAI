@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Trash2, Bot, User } from "lucide-react"
+import { Send, Trash2, Bot, User, Cpu } from "lucide-react"
 
 type Message = {
   role: "user" | "assistant"
@@ -145,7 +145,7 @@ export default function ReinAI() {
             <div className="space-y-3 sm:space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-8 sm:py-12">
-                  <Bot className="h-10 w-10 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+                  <Cpu className="h-10 w-10 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 opacity-50" />
                   <p className="text-base sm:text-xl font-medium mb-2">Welcome to ReinAI</p>
                   <p className="text-sm sm:text-base px-4">Start a conversation by typing a message below.</p>
                 </div>
@@ -244,6 +244,18 @@ export default function ReinAI() {
             </div>
           </form>
         </div>
+        <footer className="w-full mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+  Created by{" "}
+  <a
+    href="https://my-personal-portfolio-eight-rho.vercel.app" // or your portfolio link
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+  >
+    Reinier Mariscotes
+  </a>
+</footer>
+
       </div>
     </div>
   )
