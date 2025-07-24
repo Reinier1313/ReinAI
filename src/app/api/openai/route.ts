@@ -1,30 +1,17 @@
+// route.ts
 import { NextResponse } from "next/server"
 
-interface PromptRequestBody {
-  prompt: string
+interface Message {
+  role: "user" | "assistant"
+  content: string
 }
 
-interface OpenRouterResponse {
-  choices: {
-    message: {
-      content: string
-    }
-  }[]
-  error?: {
-    message: string
-  }
+interface RequestBody {
+  messages: Message[]
 }
 
 export async function POST(req: Request) {
-  let body: PromptRequestBody
-
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 })
-  }
-
-  const { prompt } = body
+  const { messages }: RequestBody = await req.json()
   const apiKey = process.env.OPENROUTER_API_KEY
 
   if (!apiKey) {
@@ -38,22 +25,19 @@ export async function POST(req: Request) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "mistralai/mistral-7b-instruct:free",
-        messages: [{ role: "user", content: prompt }],
+        messages,
       }),
     })
 
-    const data: OpenRouterResponse = await response.json()
+    const data = await response.json()
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: data.error?.message || "API error" },
-        { status: response.status }
-      )
+      return NextResponse.json({ error: data.error?.message || "API error" }, { status: 400 })
     }
 
     return NextResponse.json({ result: data.choices[0].message.content })

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -42,28 +41,74 @@ export default function ReinAI() {
   const sendPrompt = async () => {
     if (!input.trim()) return
 
-    const newMessages: Message[] = [...messages, { role: "user", content: input }]
+    const userMessage = input.trim()
+    const newMessages: Message[] = [...messages, { role: "user", content: userMessage }]
     setMessages(newMessages)
     setInput("")
     setLoading(true)
 
     try {
+
+       // Check for specific "Who made you?" question
+      const lowerCaseMessage = userMessage.toLowerCase()
+      if (
+        lowerCaseMessage.includes("who made you") ||
+        lowerCaseMessage.includes("who created you") ||
+        lowerCaseMessage.includes("who built you") ||
+        lowerCaseMessage.includes("who developed you")
+      ) {
+        // Add a small delay to simulate thinking
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        setMessages([
+          ...newMessages,
+          {
+            role: "assistant",
+            content: "I was made by Reinier Mariscotes if you want to know more about him please do contact im at reinier231@gmail.com",
+          },
+        ])
+        setLoading(false)
+        return
+      }
+
       const res = await fetch("/api/openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({
+          prompt: userMessage,
+          messages: newMessages, // Send both for compatibility
+        }),
       })
 
-      const data: { result?: string } = await res.json()
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+      }
 
-      setMessages([...newMessages, { role: "assistant", content: data.result ?? "Something went wrong." }])
-        } catch (err) {
+      const data: { result?: string; error?: string } = await res.json()
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      setMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content: data.result ?? "Something went wrong.",
+        },
+      ])
+    } catch (err) {
       console.error("Error sending prompt:", err)
-      setMessages([...newMessages, { role: "assistant", content: "Error sending prompt." }])
+      setMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content: `Error: ${err instanceof Error ? err.message : "Failed to send message. Please try again."}`,
+        },
+      ])
     } finally {
       setLoading(false)
     }
-
   }
 
   const clearMessages = () => {
@@ -72,62 +117,69 @@ export default function ReinAI() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-2 sm:p-4 lg:p-6">
-      <Card className="w-full max-w-4xl flex flex-col h-[80vh] shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-        <CardHeader className="pb-3 sm:pb-4">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg sm:text-xl text-gray-800 dark:text-gray-200">ReinAI</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearMessages}
-              className="text-gray-500 hover:text-red-500 transition-colors"
-              disabled={messages.length === 0}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Clear</span>
-            </Button>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 p-3 sm:p-4 border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <div className="flex justify-between items-center max-w-4xl mx-auto">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200">ReinAI</h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Ask me anything</p>
           </div>
-        </CardHeader>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearMessages}
+            className="text-gray-500 hover:text-red-500 transition-colors"
+            disabled={messages.length === 0}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1">Clear</span>
+          </Button>
+        </div>
+      </div>
 
-        <CardContent className="flex flex-col flex-grow overflow-hidden p-3 sm:p-6">
-          <ScrollArea className="flex-grow pr-2 sm:pr-4" ref={scrollAreaRef}>
-            <div className="space-y-4 sm:space-y-6">
+      {/* Chat Messages - Scrollable middle section */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full max-w-4xl mx-auto px-3 sm:px-4">
+          <ScrollArea className="h-full py-4" ref={scrollAreaRef}>
+            <div className="space-y-3 sm:space-y-4">
               {messages.length === 0 && (
-                <div className="text-center text-gray-500 dark:text-gray-400 mt-8 sm:mt-12">
-                  <Bot className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg sm:text-xl font-medium mb-2">Welcome to ReinAI</p>
-                  <p className="text-sm sm:text-base">Start a conversation by typing a message below.</p>
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8 sm:py-12">
+                  <Bot className="h-10 w-10 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+                  <p className="text-base sm:text-xl font-medium mb-2">Welcome to ReinAI</p>
+                  <p className="text-sm sm:text-base px-4">Start a conversation by typing a message below.</p>
                 </div>
               )}
 
               {messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`flex gap-3 sm:gap-4 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {msg.role === "assistant" && (
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                        <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                        <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
                     </div>
                   )}
 
                   <div
-                    className={`max-w-[85%] sm:max-w-[80%] lg:max-w-[70%] rounded-2xl px-4 py-3 sm:px-5 sm:py-4 ${
+                    className={`max-w-[80%] sm:max-w-[75%] lg:max-w-[70%] rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
                       msg.role === "user"
-                        ? "bg-blue-500 text-white ml-auto"
+                        ? "bg-blue-500 text-white"
                         : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     }`}
                   >
-                    <div className="text-sm sm:text-base whitespace-pre-wrap break-words">{msg.content}</div>
+                    <div className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
+                      {msg.content}
+                    </div>
                   </div>
 
                   {msg.role === "user" && (
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-500 flex items-center justify-center">
-                        <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-500 flex items-center justify-center">
+                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
                     </div>
                   )}
@@ -135,21 +187,21 @@ export default function ReinAI() {
               ))}
 
               {loading && (
-                <div className="flex gap-3 sm:gap-4 justify-start">
+                <div className="flex gap-2 sm:gap-3 justify-start">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                      <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                     </div>
                   </div>
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-3 sm:px-5 sm:py-4">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-3 py-2 sm:px-4 sm:py-3">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce"></div>
                       <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce"
                         style={{ animationDelay: "0.1s" }}
                       ></div>
                       <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce"
                         style={{ animationDelay: "0.2s" }}
                       ></div>
                     </div>
@@ -158,36 +210,41 @@ export default function ReinAI() {
               )}
             </div>
           </ScrollArea>
+        </div>
+      </div>
 
+      {/* Input Form - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               sendPrompt()
             }}
-            className="flex gap-2 sm:gap-3 mt-4 sm:mt-6 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl"
+            className="flex gap-2 sm:gap-3"
           >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask ReinAI something..."
-              className="flex-1 border-0 bg-transparent focus-visible:ring-1 focus-visible:ring-blue-500 text-sm sm:text-base"
-              disabled={loading}
-              autoFocus
-            />
-            <Button
-              type="submit"
-              disabled={loading || !input.trim()}
-              size="sm"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors"
-            >
-              <Send className="h-4 w-4" />
-              <span className="sr-only">Send message</span>
-            </Button>
+            <div className="flex-1 relative">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask ReinAI something..."
+                className="w-full pr-12 sm:pr-14 border-gray-200 dark:border-gray-600 focus-visible:ring-2 focus-visible:ring-blue-500 text-sm sm:text-base rounded-full"
+                disabled={loading}
+                autoFocus
+              />
+              <Button
+                type="submit"
+                disabled={loading || !input.trim()}
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 p-0"
+              >
+                <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="sr-only">Send message</span>
+              </Button>
+            </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
-
-    //sample push
   )
 }
