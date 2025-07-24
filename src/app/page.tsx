@@ -21,6 +21,18 @@ export type ChatSession = {
 export default function Home() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [currentId, setCurrentId] = useState<string>("")
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const isSmallScreen = window.innerWidth < 768 // Tailwind's md breakpoint
+      setIsSidebarOpen(!isSmallScreen)
+    }
+
+    checkScreenSize()
+    window.addEventListener("resize", checkScreenSize)
+    return () => window.removeEventListener("resize", checkScreenSize)
+  }, [])
 
   // Load saved sessions
   useEffect(() => {
@@ -72,12 +84,14 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex">
-      <Sidebar
-        sessions={sessions}
-        currentId={currentId}
-        onSelect={setCurrentId}
-        onNew={handleNewSession}
-      />
+       {isSidebarOpen && (
+        <Sidebar
+          sessions={sessions}
+          currentId={currentId}
+          onSelect={setCurrentId}
+          onNew={handleNewSession}
+        />
+      )}
 
       <div className="flex-1 px-4 py-8">
         <div className="mx-auto w-full max-w-4xl">
