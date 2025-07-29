@@ -194,6 +194,7 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
     if (modelId.includes("mistral")) return "Mistral 7B"
     if (modelId.includes("qwen")) return "Qwen Coder"
     if (modelId.includes("moonshot")) return "Moonshot AI"
+    if (modelId.includes("google")) return "Gemini"
     return "Unknown Model"
   }
 
@@ -359,6 +360,7 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
                         { id: "mistralai/mistral-7b-instruct:free", name: "Mistral 7B", desc: "Fast & efficient" },
                         { id: "qwen/qwen3-coder:free", name: "Qwen Coder", desc: "Code specialist" },
                         { id: "moonshotai/kimi-k2:free", name: "Moonshot AI", desc: "Creative & versatile" },
+                        { id: "google/gemma-3-4b-it:free", name: "Gemini", desc: "Google's Choice" },
                       ].map((modelOption) => (
                         <div
                           key={modelOption.id}
