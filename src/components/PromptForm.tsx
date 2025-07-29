@@ -146,7 +146,7 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
           {
             role: "assistant",
             content:
-              "I was made by **Reinier Mariscotes**. You can reach him at reinier231@gmail.com.\n\n• Passionate AI Developer\n• Building innovative solutions\n• Always learning and improving",
+              "I was made by **Reinier Mariscotes**. You can reach him at reinier231@gmail.com.\n\n• Passionate AI Developer\n• Building innovative solutions\n• Front-End Developer\n• SEO Specialist\n• Always learning and improving",
           },
         ])
         return
