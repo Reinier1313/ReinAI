@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, Trash2, Bot, User, Cpu } from "lucide-react"
 import { ChatSession, ChatMessage } from "@/app/page" // adjust this path if needed
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import { Check } from "lucide-react"
+
 
 type PromptFormProps = {
   session: ChatSession
@@ -16,6 +24,17 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [model, setModel] = useState(() => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("reinai-model") || "mistralai/mistral-7b-instruct:free"
+  }
+  return "mistralai/mistral-7b-instruct:free"
+})
+
+useEffect(() => {
+  localStorage.setItem("reinai-model", model)
+}, [model])
+
 
   const messages = session.messages
 
@@ -54,9 +73,11 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    prompt: userMessage.content,
-    messages: newMessages, // include full context
-  }),
+  prompt: userMessage.content,
+  messages: newMessages,
+  model,
+}),
+
 })
 
       const data: { result?: string; error?: string } = await res.json()
@@ -91,7 +112,8 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
   }
 
   return (
-    <div className="flex flex-col min-h-[85vh] sm:min-h-[90vh] max-h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+
       {/* Header */}
       <div className="flex-shrink-0 p-4 border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
         <div className="flex justify-between items-center max-w-4xl mx-auto">
@@ -114,7 +136,8 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
 
       {/* Chat Area */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full max-w-4xl mx-auto px-3 sm:px-4">
+        <div className="flex-1 max-w-4xl mx-auto px-3 sm:px-4 overflow-y-auto">
+
           <ScrollArea className="h-full py-4" ref={scrollAreaRef}>
             <div className="space-y-4">
               {messages.length === 0 && (
@@ -176,23 +199,60 @@ export default function PromptForm({ session, onMessagesUpdate }: PromptFormProp
             }}
             className="flex gap-2"
           >
-            <div className="flex-1 relative">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask ReinAI something..."
-                disabled={loading}
-                className="w-full pr-10 border-gray-300 dark:border-gray-600 focus-visible:ring-1 focus-visible:ring-blue-500 rounded-full"
-              />
-              <Button
-                type="submit"
-                disabled={loading || !input.trim()}
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full relative">
+  {/* Model Selector */}
+  <div className="flex-shrink-0">
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs sm:text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+        >
+          {model.includes("mistral") ? "Mistral 7B" : "Qwen Coder"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2 text-sm">
+        <div className="space-y-1">
+          <div
+            onClick={() => setModel("mistralai/mistral-7b-instruct:free")}
+            className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+          >
+            <span>Mistral 7B</span>
+            {model === "mistralai/mistral-7b-instruct:free" && <Check className="w-4 h-4 text-green-500" />}
+          </div>
+          <div
+            onClick={() => setModel("qwen/qwen3-coder:free")}
+            className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+          >
+            <span>Qwen Coder</span>
+            {model === "qwen/qwen3-coder:free" && <Check className="w-4 h-4 text-green-500" />}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  </div>
+
+  {/* Input with Send Button */}
+  <div className="flex-1 relative">
+    <Input
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+      placeholder="Ask ReinAI something..."
+      disabled={loading}
+      className="w-full pr-10 border-gray-300 dark:border-gray-600 focus-visible:ring-1 focus-visible:ring-blue-500 rounded-full"
+    />
+    <Button
+      type="submit"
+      disabled={loading || !input.trim()}
+      size="icon"
+      className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-blue-500 hover:bg-blue-600 text-white"
+    >
+      <Send className="w-4 h-4" />
+    </Button>
+  </div>
+</div>
+
           </form>
         </div>
       </div>
